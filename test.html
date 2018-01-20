@@ -1,0 +1,91 @@
+<HTML>
+<head>
+
+</head>
+<body>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+<video autoplay></video>
+<img src=''>
+<canvas style='display:none;'></canvas>
+<h1 class="info"></h1>
+<img id="blah" src="#" alt="your image" />
+<form id="form" runat="server">
+<input id="file-input" type="file" accept="image/*">
+</form>
+
+<script>
+  var video = document.querySelector('video');
+  var canvas = document.querySelector('canvas');
+  canvas.width = 600
+  canvas.height = 480
+  var ctx = canvas.getContext('2d');
+  var h1 = document.querySelector('h1');
+  var localMediaStream = null;
+   const fileInput = document.getElementById('file-input');
+  fileInput.addEventListener('change', (e) => doSomething(e.target.files[0]));
+  var uploadImage = "";
+  function doSomething(f){
+    console.log(f)
+    h1.innerHTML = f.name;
+    var reader = new FileReader();
+        reader.onload = function (e) {
+        console.log(e.target.result);
+        uploadImage = e.target.result
+      $('#blah')
+        .attr('src', e.target.result)
+        .width(150)
+        .height(200);
+    };
+    reader.readAsDataURL(f);
+
+  }
+
+  var errorCallback = function(e) {
+    console.log('Reeeejected!', e);
+    h1.innerHTML = "rejected";
+  };
+  function snapshot() {
+    if (localMediaStream) {
+      ctx.drawImage(video, 0, 0, 600, 480);
+      document.querySelector('img').src = canvas.toDataURL('image/webp');
+      console.log(ctx.getImageData(50, 50, 100, 100));
+    }
+  }
+
+  video.addEventListener('click', snapshot, false);
+  navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia;
+  h1.innerHTML = "HEY" +  navigator.getUserMedia ;
+  navigator.getUserMedia({video: true,audio:true}, function(stream) {
+    video.src = window.URL.createObjectURL(stream);
+    localMediaStream = stream;
+  }, errorCallback);
+
+function UploadPic() {
+
+    // Generate the image data
+    <!--var data = ctx.getImageData(0, 0, 600, 480);-->
+    <!--ctx.drawImage(video, 0, 0, 600, 480);-->
+    <!--Pic = canvas.toDataURL('image/png');-->
+    <!--console.log(ctx.getImageData(0, 0, 600, 480));-->
+    <!--console.log(data)-->
+    console.log(Pic)
+    var Pic = uploadImage;
+    Pic = Pic.replace(/^data:image\/(png|jpeg|jpg);base64,/, "")
+    console.log(Pic)
+    // Sending the image data to Server
+    $.ajax({
+        type: 'POST',
+        url: '',
+        data: '{ "imageData" : "' + Pic + '" }',
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json',
+        success: function (msg) {
+            alert("Done, Picture Uploaded.");
+        }
+    });
+}
+</script>
+
+<button onclick="javascript:UploadPic();return false;">Upload Picture to Server</button>
+</body>
+</HTML>
