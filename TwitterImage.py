@@ -31,7 +31,7 @@ class TwitterConnection:
         self.recentImage = img
 
     def getRandomRecentImage(self, returnImage=None):
-        self.tweets = self.getMentionedTweetsWithMedia()
+        if len(self.tweets == 0): self.tweets = self.getMentionedTweetsWithMedia()
         if len(self.tweets) > 0:
             imgIndex = random.randint(0, len(self.tweets))
             tweeted_image = self.recentImageURLS[imgIndex][-1]
@@ -60,6 +60,7 @@ class TwitterConnection:
                 outtweets.append(
                     [tweet.id_str, tweet.created_at, tweet.text.encode("utf-8"),
                      tweet.entities['media'][0]['media_url']])
+        print(outtweets)
         return outtweets
 
     def getMentionedTweets(self, tweet_count=10):

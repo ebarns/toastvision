@@ -11,7 +11,8 @@ class ImageEffect:
         self.NAME = "Image effects"
         self.RECORD_AUDIO_SWITCH = record_audio
         self.TWITTER_SWITCH = twitter_switch
-        self.twitterController = TwitterConnection()
+
+        if twitter_switch: self.twitterController = TwitterConnection()
         self.recentTweetImages = []
 
     #
@@ -29,7 +30,7 @@ class ImageEffect:
             #     print("changing photo")
             #     # self.twitterController.setRecentImage(self.recentTweetImages[0])
             #     self.recentTweetImages = []
-            if counter % 20 == 0:
+            if counter == 105:
                 print("updating tweet")
                 try:
                     # self.twitterController.updateTweetsAndMedia()
@@ -40,7 +41,7 @@ class ImageEffect:
                     print("thread failed to start")
             if counter % 8 <= 4 and self.twitterController.getRecentImage() is not None:
                 img2 = self.twitterController.getRecentImage()
-                img2 = img2.scale(640, 480)
+                img2 = img2.scale(img1.width, img1.height)
 
             return img1, img2
         else:
@@ -68,17 +69,24 @@ class ImageEffect:
     def imageDifference(self, img1, img2):
         return img1 - img2
 
+    def imageAddition(self, img1, img2):
+        return img1 + img2
+
     def getImageDifferenceMask(self, img, img2, baseImage, secondBaseImage, counter):
         if counter % 2 == 0:
             img = self.imageDifference(img, baseImage)
             img2 = self.imageDifference(img2, secondBaseImage)
+
+        if counter % 4 == 0:
             baseImage = img
             secondBaseImage = img2
 
         return img, img2, baseImage, secondBaseImage
 
     def getCorners(self, counter, soundSum, width, height):
+        # adjustCounter = (counter) % 4
         selectedCorner = (counter / 4) % 4
+
         if (selectedCorner == 0):
             return [(soundSum, soundSum), (width, 0), (width, height), (0, height)]
         elif (selectedCorner == 1):
@@ -88,8 +96,45 @@ class ImageEffect:
         else:
             return [(0, 0), (width, 0), (width, height), (soundSum, height - soundSum)]
 
-    def applyAudioWarp(self, counter, img, img2, soundSum):
-        if self.RECORD_AUDIO_SWITCH:
+    def getRotatingCorners(self, counter, width, height):
+        modCounter = (counter % 4) + 1
+        soundSum = 20 * modCounter
+        decreasingSoundSum = (((modCounter * 3) % 4) + 1) * 20
+        selectedCorner = (math.floor(counter / 4.0)) % 4
+
+        if (selectedCorner == 0):
+            return [(soundSum, soundSum),
+                    (width, 0),
+                    (width, height),
+                    (decreasingSoundSum, height - decreasingSoundSum)]
+        elif (selectedCorner == 1):
+            return [(decreasingSoundSum, decreasingSoundSum),
+                    (width - soundSum, soundSum),
+                    (width, height),
+                    (0, height)]
+        if (selectedCorner == 2):
+            return [(0, 0),
+                    (width - decreasingSoundSum, decreasingSoundSum),
+                    (width - soundSum, height - soundSum),
+                    (0, height)]
+        else:
+            return [(0, 0),
+                    (width, 0),
+                    (width - decreasingSoundSum, height - decreasingSoundSum),
+                    (soundSum, height - soundSum)]
+            # return [(0, 0), (width, 0), (width, height), (0, height)]
+        # return [(soundSum, soundSum), (width - adjustCounter, adjustCounter), (width, height),
+        #             (adjustCounter, height - adjustCounter)]
+        # else:
+
+    def applyCircularWarp(self,counter, img, img2):
+        corners = self.getRotatingCorners(counter, img.width, img.height)
+        img = img.warp(corners)
+        img2 = img2.warp(corners)
+        return img, img2
+
+    def applyAudioWarp(self, counter, img, img2, soundSum, override=False):
+        if self.RECORD_AUDIO_SWITCH or override:
             if not math.isnan(soundSum):
                 if soundSum >= 1:
                     adjustedSum = soundSum * 15
